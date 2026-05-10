@@ -1283,6 +1283,28 @@ def export_excel(record_id: int) -> Path:
         dyn_ws.cell(row_idx, 4, item.get("delta", 0))
         row_idx += 1
 
+    trans_ws = wb.create_sheet("Транскрибация")
+    trans_ws.cell(1, 1, "Транскрибация встречи").font = bold
+    full_text = rec.get("full_text") or ""
+    if full_text:
+        trans_ws.cell(2, 1, full_text)
+        trans_ws.column_dimensions["A"].width = 120
+    else:
+        trans_ws.cell(2, 1, "Транскрибация пока недоступна")
+
+    segments = rec.get("segments") or []
+    if segments:
+        seg_ws = wb.create_sheet("Сегменты")
+        seg_headers = ["Время", "Текст", "Тип", "Sentiment", "Confidence"]
+        for i, h in enumerate(seg_headers, 1):
+            seg_ws.cell(1, i, h).font = bold
+        for r, seg in enumerate(segments, 2):
+            seg_ws.cell(r, 1, seg.get("timecode", ""))
+            seg_ws.cell(r, 2, seg.get("text", ""))
+            seg_ws.cell(r, 3, seg.get("predicted_label", "other"))
+            seg_ws.cell(r, 4, seg.get("sentiment_label", "neutral"))
+            seg_ws.cell(r, 5, seg.get("prediction_confidence", 0))
+
     out = EXPORTS_DIR / f"report_{record_id}.xlsx"
     wb.save(out)
 
@@ -1298,13 +1320,11 @@ def export_pdf(record_id: int) -> Path:
     if not rec:
         raise HTTPException(404, "Record not found")
 
-    class PDF(FPDF):
-        pass
-
-    pdf = PDF()
+    pdf = FPDF()
     pdf.add_page()
 
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    W = 190
 
     if Path(font_path).exists():
         pdf.add_font("DejaVu", "", font_path)
@@ -1315,23 +1335,23 @@ def export_pdf(record_id: int) -> Path:
     analytics = rec.get("analytics_json") or {}
     dynamic = analytics.get("dynamic_analysis") or {}
 
-    pdf.multi_cell(0, 8, f"PM Insights — {rec['filename']}")
+    pdf.multi_cell(w=W, h=8, text=f"PM Insights — {str(rec['filename'])}")
     pdf.ln(2)
-    pdf.multi_cell(0, 8, f"Проект: {rec.get('project_name') or ''}")
-    pdf.multi_cell(0, 8, f"Дата: {rec.get('meeting_date') or ''}")
-    pdf.multi_cell(0, 8, f"Участники: {rec.get('participants') or ''}")
-    pdf.multi_cell(0, 8, f"Длительность: {rec.get('duration') or 0} сек")
-    pdf.ln(2)
-
-    pdf.multi_cell(0, 8, "Динамический анализ:")
-    pdf.multi_cell(0, 8, f"Вывод: {dynamic.get('summary', 'Нет данных')}")
-    pdf.multi_cell(0, 8, f"Изменение количества задач: {dynamic.get('tasks_delta', 0)}")
-    pdf.multi_cell(0, 8, f"Изменение количества Q/A: {dynamic.get('qa_delta', 0)}")
-    pdf.multi_cell(0, 8, f"Изменение sentiment: {dynamic.get('sentiment_delta', 0)}")
-    pdf.multi_cell(0, 8, f"Изменение негативной доли: {dynamic.get('negative_ratio_delta', 0)}")
+    pdf.multi_cell(w=W, h=8, text=f"Проект: {str(rec.get('project_name') or '')}")
+    pdf.multi_cell(w=W, h=8, text=f"Дата: {str(rec.get('meeting_date') or '')}")
+    pdf.multi_cell(w=W, h=8, text=f"Участники: {str(rec.get('participants') or '')}")
+    pdf.multi_cell(w=W, h=8, text=f"Длительность: {str(rec.get('duration') or 0)} сек")
     pdf.ln(2)
 
-    pdf.multi_cell(0, 8, "Задачи:")
+    pdf.multi_cell(w=W, h=8, text="Динамический анализ:")
+    pdf.multi_cell(w=W, h=8, text=f"Вывод: {str(dynamic.get('summary', 'Нет данных'))}")
+    pdf.multi_cell(w=W, h=8, text=f"Изменение количества задач: {dynamic.get('tasks_delta', 0)}")
+    pdf.multi_cell(w=W, h=8, text=f"Изменение количества Q/A: {dynamic.get('qa_delta', 0)}")
+    pdf.multi_cell(w=W, h=8, text=f"Изменение sentiment: {dynamic.get('sentiment_delta', 0)}")
+    pdf.multi_cell(w=W, h=8, text=f"Изменение негативной доли: {dynamic.get('negative_ratio_delta', 0)}")
+    pdf.ln(2)
+
+    pdf.multi_cell(w=W, h=8, text="Задачи:")
 
     for i, task in enumerate(rec.get("tasks_json") or [], 1):
         line = (
@@ -1339,7 +1359,23 @@ def export_pdf(record_id: int) -> Path:
             f"Ответственный: {task.get('responsible') or '—'} | "
             f"Срок: {task.get('deadline') or '—'}"
         )
-        pdf.multi_cell(0, 8, line)
+        pdf.multi_cell(w=W, h=8, text=line)
+
+    pdf.ln(4)
+    pdf.multi_cell(w=W, h=8, text="Транскрибация встречи:")
+    pdf.ln(2)
+    full_text = rec.get("full_text") or ""
+    if full_text:
+        if Path(font_path).exists():
+            pdf.set_font("DejaVu", size=9)
+        else:
+            pdf.set_font("Arial", size=9)
+        for paragraph in full_text.split("\n"):
+            if paragraph.strip():
+                pdf.multi_cell(w=W, h=5, text=paragraph.strip())
+                pdf.ln(1)
+    else:
+        pdf.multi_cell(w=W, h=8, text="Транскрибация пока недоступна")
 
     out = EXPORTS_DIR / f"report_{record_id}.pdf"
     pdf.output(str(out))
@@ -1628,7 +1664,13 @@ async def api_excel_export(record_id: int, user: dict = Depends(get_current_user
     if not rec:
         raise HTTPException(404, "Record not found")
     path = export_excel(record_id)
-    return FileResponse(path, filename=path.name, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    safe_filename = re.sub(r'[^\w\-.]', '_', rec["filename"])
+    return FileResponse(
+        path,
+        filename=f"report_{safe_filename}.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="report_{safe_filename}.xlsx"'},
+    )
 
 
 @app.get("/api/export/pdf/{record_id}")
@@ -1637,7 +1679,13 @@ async def api_pdf_export(record_id: int, user: dict = Depends(get_current_user))
     if not rec:
         raise HTTPException(404, "Record not found")
     path = export_pdf(record_id)
-    return FileResponse(path, filename=path.name, media_type="application/pdf")
+    safe_filename = re.sub(r'[^\w\-.]', '_', rec["filename"])
+    return FileResponse(
+        path,
+        filename=f"report_{safe_filename}.pdf",
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="report_{safe_filename}.pdf"'},
+    )
 
 
 # ─── Legacy HTML pages (kept for backward compatibility) ──────────────────────

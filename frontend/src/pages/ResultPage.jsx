@@ -28,13 +28,62 @@ function SentimentBadge({ label, score }) {
   );
 }
 
+function DownloadButton({ recordId, format, label, bgClass }) {
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    setError('');
+    try {
+      const res = await api.get(`/export/${format}/${recordId}`, {
+        responseType: 'blob',
+      });
+      const contentDisposition = res.headers['content-disposition'] || '';
+      let filename = `report.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) filename = match[1];
+
+      const url = window.URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Ошибка скачивания');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        className={`px-3 py-1.5 ${bgClass} text-white text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-50`}
+      >
+        {downloading ? '...' : label}
+      </button>
+      {error && (
+        <span className="absolute top-full left-0 mt-1 text-xs text-red-400 whitespace-nowrap">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function ResultPage() {
   const { id } = useParams();
   const [rec, setRec] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetch = () => {
+  const fetchData = () => {
     setLoading(true);
     setError('');
     api
@@ -45,11 +94,11 @@ export default function ResultPage() {
   };
 
   useEffect(() => {
-    fetch();
+    fetchData();
   }, [id]);
 
   if (loading) return <Spinner />;
-  if (error) return <ErrorMessage message={error} onRetry={fetch} />;
+  if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
   if (!rec) return null;
 
   const tasks = rec.tasks_json || [];
@@ -59,9 +108,11 @@ export default function ResultPage() {
   const timing = rec.timing_json || {};
   const dynamic = analytics.dynamic_analysis || {};
   const taskChanges = dynamic.task_changes || {};
+  const fullText = rec.full_text || '';
 
   return (
     <div className="max-w-6xl mx-auto mt-8 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">{rec.filename}</h2>
@@ -70,20 +121,23 @@ export default function ResultPage() {
             {rec.meeting_date && ` | Дата: ${rec.meeting_date}`}
             {rec.participants && ` | ${rec.participants}`}
           </p>
+          <p className="text-gray-500 text-xs mt-1">
+            Статус: обработка завершена | Язык: {rec.language || 'unknown'}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <a
-            href={`/api/export/pdf/${rec.id}`}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-          >
-            PDF
-          </a>
-          <a
-            href={`/api/export/excel/${rec.id}`}
-            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-          >
-            Excel
-          </a>
+        <div className="flex gap-2 items-start">
+          <DownloadButton
+            recordId={rec.id}
+            format="pdf"
+            label="Скачать PDF"
+            bgClass="bg-red-600 hover:bg-red-700"
+          />
+          <DownloadButton
+            recordId={rec.id}
+            format="excel"
+            label="Скачать Excel"
+            bgClass="bg-green-600 hover:bg-green-700"
+          />
           <Link
             to="/history"
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
@@ -121,6 +175,27 @@ export default function ResultPage() {
         <span>nlp: {timing.nlp || 0}с</span>
         <span>total: {timing.total || 0}с</span>
       </div>
+
+      {/* Full Transcription Text */}
+      <section className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+        <h3 className="text-lg font-semibold text-white mb-1">Транскрибация встречи</h3>
+        <p className="text-gray-500 text-xs mb-4">
+          {rec.filename}
+          {rec.meeting_date && ` | ${rec.meeting_date}`}
+          {rec.duration ? ` | ${rec.duration}с` : ''}
+        </p>
+        {fullText ? (
+          <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700/50 max-h-[400px] overflow-y-auto">
+            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
+              {fullText}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-gray-800/30 rounded-xl p-8 border border-gray-700/30 text-center">
+            <p className="text-gray-500 text-sm">Транскрибация пока недоступна</p>
+          </div>
+        )}
+      </section>
 
       {/* Dynamic Analysis */}
       {dynamic.summary && (
@@ -240,32 +315,36 @@ export default function ResultPage() {
       {/* Transcription segments */}
       <section className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
         <h3 className="text-lg font-semibold text-white mb-3">
-          Транскрипция ({segments.length} сегментов)
+          Сегменты транскрипции ({segments.length})
         </h3>
-        <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
-          {segments.map((seg, i) => {
-            const borderColor =
-              seg.sentiment_label === 'positive'
-                ? 'border-l-green-500'
-                : seg.sentiment_label === 'negative'
-                  ? 'border-l-red-500'
-                  : 'border-l-gray-600';
-            return (
-              <div
-                key={i}
-                className={`border-l-4 ${borderColor} bg-gray-800/40 rounded-r-lg px-4 py-2`}
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <p className="text-gray-200 text-sm flex-1">{seg.text}</p>
-                  <SentimentBadge label={seg.sentiment_label} score={seg.sentiment_score} />
+        {segments.length === 0 ? (
+          <p className="text-gray-500 text-sm">Сегменты не найдены</p>
+        ) : (
+          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+            {segments.map((seg, i) => {
+              const borderColor =
+                seg.sentiment_label === 'positive'
+                  ? 'border-l-green-500'
+                  : seg.sentiment_label === 'negative'
+                    ? 'border-l-red-500'
+                    : 'border-l-gray-600';
+              return (
+                <div
+                  key={i}
+                  className={`border-l-4 ${borderColor} bg-gray-800/40 rounded-r-lg px-4 py-2`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <p className="text-gray-200 text-sm flex-1">{seg.text}</p>
+                    <SentimentBadge label={seg.sentiment_label} score={seg.sentiment_score} />
+                  </div>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {seg.timecode} | {seg.predicted_label} (conf: {seg.prediction_confidence}, src: {seg.prediction_source})
+                  </p>
                 </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  {seg.timecode} | {seg.predicted_label} (conf: {seg.prediction_confidence}, src: {seg.prediction_source})
-                </p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

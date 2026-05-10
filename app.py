@@ -107,11 +107,27 @@ app.add_middleware(
 app.mount("/results", StaticFiles(directory=str(RESULTS_DIR)), name="results")
 app.mount("/exports", StaticFiles(directory=str(EXPORTS_DIR)), name="exports")
 
-whisper_model = WhisperModel(
-    WHISPER_MODEL_NAME,
-    device=WHISPER_DEVICE,
-    compute_type=WHISPER_COMPUTE_TYPE,
-)
+WHISPER_FALLBACK_CHAIN = [WHISPER_MODEL_NAME, "large-v3", "large", "medium", "base"]
+_seen = set()
+WHISPER_FALLBACK_CHAIN = [m for m in WHISPER_FALLBACK_CHAIN if not (m in _seen or _seen.add(m))]
+
+whisper_model = None
+for _model_name in WHISPER_FALLBACK_CHAIN:
+    try:
+        print(f"[whisper] loading model '{_model_name}' (device={WHISPER_DEVICE}, compute={WHISPER_COMPUTE_TYPE})")
+        whisper_model = WhisperModel(
+            _model_name,
+            device=WHISPER_DEVICE,
+            compute_type=WHISPER_COMPUTE_TYPE,
+        )
+        WHISPER_MODEL_NAME = _model_name
+        print(f"[whisper] model '{_model_name}' loaded successfully")
+        break
+    except Exception as e:
+        print(f"[whisper] failed to load '{_model_name}': {e}")
+
+if whisper_model is None:
+    raise RuntimeError("Could not load any Whisper model")
 
 classifier_tokenizer = None
 classifier_model = None

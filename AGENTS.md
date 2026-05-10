@@ -24,7 +24,7 @@
 
 ### Key gotchas
 
-- The Whisper model downloads on first startup (~100MB for `tiny`, ~3GB for `large-v3`). Use `WHISPER_MODEL_NAME=tiny` for faster dev startup.
+- The Whisper model downloads on first startup (~3GB for `large-v3`). The app uses a fallback chain: requested model → `large-v3` → `large` → `medium` → `base`. Set `WHISPER_MODEL_NAME=tiny` in `.env` for faster dev startup if transcription quality is not important.
 - `uvicorn --reload` watches the whole `/workspace` directory; frontend file changes may trigger backend reload. This is harmless but creates log noise.
 - The backend's `init_db()` runs on startup and handles schema migrations (adds `user_id` column if missing). No manual migration needed.
 - All ML model imports (`torch`, `transformers`, `natasha`) are wrapped in try/except — the app works in "rules-only" mode if they fail to import.

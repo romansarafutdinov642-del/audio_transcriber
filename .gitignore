@@ -55,3 +55,6 @@ results/
 
 # Frontend build cache
 frontend/node_modules/
+
+# Jmix — отдельный репозиторий (см. jmix-aviation/.git)
+jmix-aviation/

@@ -1,5 +1,9 @@
 # Aviation — Jmix 2.x (ПР 9.1–9.3, вариант 4)
 
+**Отдельный проект.** Не связан с `audio_transcriber` и другими репозиториями.
+
+Корень приложения — эта папка (`jmix-aviation`). Откройте в IDE именно её, запускайте только из неё.
+
 Проект практических работ по Jmix: модель данных, Generic UI и сервисы для варианта 4 (Airplane, Airport, Flight).
 
 ## Требования
@@ -7,10 +11,23 @@
 - JDK 17 или 21
 - Gradle 8.x (wrapper включён)
 
-## Запуск
+## Как вынести на свой компьютер
+
+1. Скопируйте папку `jmix-aviation` куда удобно, например `C:\Projects\jmix-aviation` или `~/jmix-aviation`.
+2. В IntelliJ IDEA: **File → Open** → выберите эту папку (не родительский репозиторий).
+3. Или создайте отдельный Git-репозиторий только для Jmix:
 
 ```bash
 cd jmix-aviation
+git init
+git add .
+git commit -m "Jmix PR 9.1-9.3 variant 4"
+```
+
+## Запуск
+
+```bash
+cd jmix-aviation   # или cd C:\Projects\jmix-aviation
 ./gradlew bootRun
 ```
 

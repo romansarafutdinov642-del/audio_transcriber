@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="1" author="aviation">
+        <createTable tableName="AIRPORT">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="varchar(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="aviation">
+        <createTable tableName="FLIGHT">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ARRIVAL_POINT" type="varchar(255)"/>
+            <column name="FLIGHT_DURATION" type="double"/>
+            <column name="AIRPORT_ID" type="${uuid.type}"/>
+        </createTable>
+        <createIndex indexName="IDX_FLIGHT_AIRPORT" tableName="FLIGHT">
+            <column name="AIRPORT_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseTableName="FLIGHT" baseColumnNames="AIRPORT_ID"
+                                 constraintName="FK_FLIGHT_ON_AIRPORT"
+                                 referencedTableName="AIRPORT" referencedColumnNames="ID"/>
+    </changeSet>
+
+    <changeSet id="3" author="aviation">
+        <createTable tableName="AIRPLANE">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MANUFACTURER" type="varchar(255)"/>
+            <column name="BOARD_NUMBER" type="varchar(255)"/>
+            <column name="PAYLOAD_CAPACITY" type="double"/>
+            <column name="COMMISSIONING_DATE" type="date"/>
+            <column name="AIRPORT_ID" type="${uuid.type}"/>
+        </createTable>
+        <createIndex indexName="IDX_AIRPLANE_AIRPORT" tableName="AIRPLANE">
+            <column name="AIRPORT_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseTableName="AIRPLANE" baseColumnNames="AIRPORT_ID"
+                                 constraintName="FK_AIRPLANE_ON_AIRPORT"
+                                 referencedTableName="AIRPORT" referencedColumnNames="ID"/>
+    </changeSet>
+
+    <changeSet id="4" author="aviation">
+        <createTable tableName="AIRPLANE_FLIGHT_LINK">
+            <column name="AIRPLANE_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FLIGHT_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="AIRPLANE_FLIGHT_LINK"
+                       columnNames="AIRPLANE_ID, FLIGHT_ID"
+                       constraintName="PK_AIRPLANE_FLIGHT_LINK"/>
+        <addForeignKeyConstraint baseTableName="AIRPLANE_FLIGHT_LINK" baseColumnNames="AIRPLANE_ID"
+                                 constraintName="FK_AIRPL_FLIGHT_ON_AIRPLANE"
+                                 referencedTableName="AIRPLANE" referencedColumnNames="ID"/>
+        <addForeignKeyConstraint baseTableName="AIRPLANE_FLIGHT_LINK" baseColumnNames="FLIGHT_ID"
+                                 constraintName="FK_AIRPL_FLIGHT_ON_FLIGHT"
+                                 referencedTableName="FLIGHT" referencedColumnNames="ID"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,10 @@
+.jmix/
+.gradle/
+build/
+node_modules/
+src/main/frontend/generated/
+src/main/bundles/
+.idea/
+*.iml
+out/
+.DS_Store

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<menu-config xmlns="http://jmix.io/schema/flowui/menu">
+
+    <menu id="aviation" title="msg://menu.aviation.title" opened="true">
+        <item view="aviation_Airport.list" title="msg://menu.airport"/>
+        <item view="aviation_Flight.list" title="msg://menu.flight"/>
+        <item view="aviation_Airplane.list" title="msg://menu.airplane"/>
+    </menu>
+
+    <menu id="application" title="msg://menu.application.title">
+        <item view="aviation_User.list" title="msg://menu.user"/>
+    </menu>
+
+</menu-config>

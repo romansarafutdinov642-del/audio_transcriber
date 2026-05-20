@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://flightListView.title"
+      focusComponent="flightsDataGrid">
+    <data>
+        <collection id="flightsDc"
+                    class="com.company.aviation.entity.Flight">
+            <fetchPlan extends="_base">
+                <property name="airport" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="flightsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from Flight e order by e.arrivalPoint]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="flightsDataGrid.createAction"/>
+            <button id="editButton" action="flightsDataGrid.editAction"/>
+            <button id="removeButton" action="flightsDataGrid.removeAction"/>
+        </hbox>
+        <dataGrid id="flightsDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="flightsDc">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns>
+                <column property="arrivalPoint"/>
+                <column property="flightDuration"/>
+                <column property="airport"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>

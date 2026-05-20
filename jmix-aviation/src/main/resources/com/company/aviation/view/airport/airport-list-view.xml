@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://airportListView.title"
+      focusComponent="airportsDataGrid">
+    <data>
+        <collection id="airportsDc"
+                    class="com.company.aviation.entity.Airport">
+            <fetchPlan extends="_base"/>
+            <loader id="airportsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from Airport e order by e.name]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="airportsDataGrid.createAction"/>
+            <button id="editButton" action="airportsDataGrid.editAction"/>
+            <button id="removeButton" action="airportsDataGrid.removeAction"/>
+        </hbox>
+        <dataGrid id="airportsDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="airportsDc">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns>
+                <column property="name"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>

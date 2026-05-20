@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://airplaneListView.title"
+      focusComponent="airplanesDataGrid">
+    <data>
+        <collection id="airplanesDc"
+                    class="com.company.aviation.entity.Airplane">
+            <fetchPlan extends="_base">
+                <property name="airport" fetchPlan="_base"/>
+                <property name="flights" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="airplanesDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from Airplane e order by e.boardNumber]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <actions>
+        <action id="avgPayloadAction" text="msg://avgPayloadAction.text"/>
+        <action id="maxDurationAction" text="msg://maxDurationAction.text"/>
+        <action id="findAirplaneAction" text="msg://findAirplaneAction.text"/>
+        <action id="findFlightsAction" text="msg://findFlightsAction.text"/>
+    </actions>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <hbox id="buttonsPanel" classNames="buttons-panel" wrap="true">
+            <button id="createButton" action="airplanesDataGrid.createAction"/>
+            <button id="editButton" action="airplanesDataGrid.editAction"/>
+            <button id="removeButton" action="airplanesDataGrid.removeAction"/>
+            <button id="avgPayloadButton" action="avgPayloadAction"/>
+            <button id="maxDurationButton" action="maxDurationAction"/>
+            <button id="findAirplaneButton" action="findAirplaneAction"/>
+            <button id="findFlightsButton" action="findFlightsAction"/>
+        </hbox>
+        <dataGrid id="airplanesDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="airplanesDc">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns>
+                <column property="manufacturer"/>
+                <column property="boardNumber"/>
+                <column property="payloadCapacity"/>
+                <column property="commissioningDate"/>
+                <column property="airport"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>

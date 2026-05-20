@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://flightDetailView.title"
+      focusComponent="form">
+    <data>
+        <instance id="flightDc"
+                  class="com.company.aviation.entity.Flight">
+            <fetchPlan extends="_base">
+                <property name="airport" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader/>
+        </instance>
+        <collection id="airportsDc"
+                    class="com.company.aviation.entity.Airport">
+            <fetchPlan extends="_base"/>
+            <loader id="airportsDl">
+                <query>
+                    <![CDATA[select e from Airport e order by e.name]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <actions>
+        <action id="saveCloseAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <formLayout id="form" dataContainer="flightDc">
+            <textField id="arrivalPointField" property="arrivalPoint"/>
+            <typedTextField id="flightDurationField" property="flightDuration" datatype="double"/>
+            <entityComboBox id="airportField" property="airport" itemsContainer="airportsDc"/>
+        </formLayout>
+        <hbox id="detailActions">
+            <button id="saveAndCloseButton" action="saveCloseAction"/>
+            <button id="closeButton" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>
